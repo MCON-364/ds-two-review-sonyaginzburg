@@ -1,6 +1,8 @@
 package edu.touro.mcon364.finalreview.orderflowhandoff.exercises;
 
-import edu.touro.mcon364.finalreview.model.Action;import java.util.Optional;
+import edu.touro.mcon364.finalreview.model.Action;
+import java.util.Optional;
+import java.util.Stack;
 
 /**
  * In-class Exercise 1 — Action History
@@ -28,28 +30,47 @@ import edu.touro.mcon364.finalreview.model.Action;import java.util.Optional;
 
  */
 public class ActionHistory {
+    private final Stack<Action> undoStack = new Stack<>();
+    private final Stack<Action> redoStack = new Stack<>();
 
     public void perform(Action action) {
         // TODO: implement based on the requirements above
+        undoStack.push(action);
+        redoStack.clear(); // clears the whole stack of redo
+
     }
 
     public Optional<Action> undo() {
         // TODO: implement based on the requirements above
-        return Optional.empty();
+        // TODO: if undoStack is empty, return Optional.empty()
+        // TODO: otherwise move one action from undoStack to redoStack
+        if (undoStack.isEmpty()) {
+            return Optional.empty();
+        }
+        Action action = undoStack.pop();
+        redoStack.push(action);
+        return Optional.of(action);
     }
 
     public Optional<Action> redo() {
         // TODO: implement based on the requirements above
-        return Optional.empty();
+        if (redoStack.isEmpty()) {
+            return Optional.empty();
+        }
+        // TODO: otherwise move one action from redoStack to undoStack
+        Action action = redoStack.pop();
+        undoStack.push(action);
+
+        return Optional.of(action);
     }
 
     public int getUndoCount() {
-        // TODO: implement based on the requirements above
-        return 0;
+        // implement based on the requirements above
+        return undoStack.size();
     }
 
     public int getRedoCount() {
-        // TODO: implement based on the requirements above
-        return 0;
+        //implement based on the requirements above
+        return redoStack.size();
     }
 }
