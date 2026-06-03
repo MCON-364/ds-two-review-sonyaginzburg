@@ -20,6 +20,7 @@ import java.util.stream.*;
  *
  * Before coding, think about:
  * - Why do we use TreeSet inside the map rather than ArrayList?
+ *  is it because TreeSet supports sorting?
  * - What comparator drives the ordering inside each TreeSet?
  * - If two employees have the same name and department but different salaries,
  *   are they considered the same element inside the TreeSet?
@@ -43,8 +44,13 @@ public class EmployeeRoster {
     private final List<Employee> employees;
 
     public EmployeeRoster(List<Employee> employees) {
-        // TODO: validate non-null, store a defensive copy
-        this.employees = List.of();
+        // TODO validate non-null, store a defensive copy
+        // validate that employees is not null
+        if (employees == null ) {
+            throw new IllegalArgumentException("Employees cannot be null");
+        }
+        //store a defensive copy so outside code cannot mutate this object
+        this.employees = List.copyOf(employees);
     }
 
     /**
@@ -53,8 +59,14 @@ public class EmployeeRoster {
      * @return sorted map: department name -> sorted set of employees
      */
     public TreeMap<String, TreeSet<Employee>> buildRoster() {
-        // TODO
-        return new TreeMap<>();
+        //
+        return employees.stream()
+                .collect(Collectors.groupingBy(Employee::department,
+                        // Map supplier
+                        TreeMap::new,
+                        // the second argument in groupingBY is called the downstream collector, here it is a set of employees
+                        Collectors.toCollection(TreeSet::new)
+                ));
     }
 
     /**
@@ -63,8 +75,19 @@ public class EmployeeRoster {
      * @return map of department name -> top earner
      */
     public Map<String, Employee> getTopEarnerPerDepartment() {
-        // TODO
-        return Map.of();
+        // reminder: entrySet is a method on a Map, not a list
+        // reminder: sorted -> Comparator and collect -> Collector
+        // !!!!! needs attention
+        return employees.stream()
+                .collect(Collectors.groupingBy(Employee::department, // this is the key
+                        Collectors.collectingAndThen( // taking out the Optional
+                                Collectors.maxBy(
+                                        Comparator.comparing(Employee::salary) // finding the highest salary
+                                ),
+                                Optional::get
+                        )
+                ));
+
     }
 
     /**
@@ -74,8 +97,10 @@ public class EmployeeRoster {
      * @return globally sorted employee list
      */
     public List<Employee> getAllEmployeesSorted() {
-        // TODO
-        return List.of();
+        // pipeline = employees -> stream -> sort by name -> collect into List
+        return employees.stream()
+                .sorted(Comparator.comparing(Employee::name))
+                .toList();
     }
 
     /**
@@ -87,8 +112,9 @@ public class EmployeeRoster {
      * @return navigable sub-map
      */
     public NavigableMap<String, TreeSet<Employee>> getDepartmentsInRange(String from, String to) {
-        // TODO
-        return new TreeMap<>();
+        // how is this the whole answer?
+        return buildRoster().subMap(from, true, to, true);
+
     }
 }
 

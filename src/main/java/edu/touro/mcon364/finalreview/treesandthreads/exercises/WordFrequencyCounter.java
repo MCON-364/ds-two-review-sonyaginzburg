@@ -20,8 +20,14 @@ import java.util.stream.*;
  *
  * Before coding, think about:
  * - If we use HashMap instead of TreeMap, which methods would break, and why?
+ *       TreeMap keeps keys in sorted order and HashMap does not.
+ *       TreeMap supports subMap, headMap, tailMAp, firstKey, lastKey
+ *
  * - What is the difference between headMap(key) and headMap(key, true)?
+ *      headMap(key, True) includes the endpoint key itself
+ *
  * - Should getTopN return words with the highest count or the lowest count?
+ *      highest which is why we did reversed
  *
  * Requirements:
  * - The constructor receives the list of words to analyze.
@@ -43,12 +49,11 @@ public class WordFrequencyCounter {
     private final List<String> words;
 
     public WordFrequencyCounter(List<String> words) {
-        // TODO: validate that words is not null
+        // validate that words is not null
         if (words == null ) {
             throw new IllegalArgumentException("words cannot be null");
         }
-        // TODO: store a defensive copy so outside code cannot mutate this object
-        // make sure I understand this
+        //store a defensive copy so outside code cannot mutate this object
         this.words = List.copyOf(words);
     }
 
@@ -74,11 +79,13 @@ public class WordFrequencyCounter {
     public List<String> getTopN(int n) {
         // using already built freq map
         TreeMap<String, Long> freq = buildFrequencyMap();
-        // entry set bc u need key and value
+        // entry set bc u need key and value - gives (word, count) pairs
         return freq.entrySet().stream()
-                // review the comparing situation
+                // sort pairs by coun (getValue) and then reverse so that largest comes first (usually smallest first)
                 .sorted(Comparator.comparing(Map.Entry<String, Long>:: getValue).reversed())
+                // keep first n entries
                 .limit(n)
+                // now we need to return the words so map and get the key/word
                 .map(Map.Entry::getKey)
                 .toList();
     }
@@ -91,7 +98,7 @@ public class WordFrequencyCounter {
      * @return sorted list of matching words
      */
     public List<String> getWordsStartingWith(char prefix) {
-        // TODO
+        // using buildFrequencyMap bc keys are already unique and its a TreeMap so its already sorted alphabetically
         return buildFrequencyMap().keySet()
                 .stream()
                 .filter(word -> word.startsWith(String.valueOf(prefix)))
@@ -107,7 +114,15 @@ public class WordFrequencyCounter {
      * @return Optional containing the most frequent word in range, or empty if none
      */
     public Optional<String> getMostFrequentInRange(String from, String to) {
-        // TODO
-        return Optional.empty();
+        return buildFrequencyMap()
+                // subMap to make the smaller range
+                .subMap(from, true, to, true)
+                // we need the word and count so we use entrySet
+                .entrySet()
+                .stream()
+                // max returns Optional bc range could be empty
+                .max(Comparator.comparing(Map.Entry::getValue))
+                // map converts Optional<(word, count)> into Optional <word>
+                .map(Map.Entry::getKey);
     }
 }
