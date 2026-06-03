@@ -1,6 +1,7 @@
 package edu.touro.mcon364.finalreview.treesandthreads.exercises;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.*;
 
 /**
@@ -43,8 +44,12 @@ public class WordFrequencyCounter {
 
     public WordFrequencyCounter(List<String> words) {
         // TODO: validate that words is not null
+        if (words == null ) {
+            throw new IllegalArgumentException("words cannot be null");
+        }
         // TODO: store a defensive copy so outside code cannot mutate this object
-        this.words = List.of();
+        // make sure I understand this
+        this.words = List.copyOf(words);
     }
 
     /**
@@ -53,8 +58,11 @@ public class WordFrequencyCounter {
      * @return sorted frequency map
      */
     public TreeMap<String, Long> buildFrequencyMap() {
-        // TODO
-        return new TreeMap<>();
+        // Function.identity() means that the word itself is the grouping key
+        Map<String, Long> frequencies =
+                words.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        // this copies everything into a treemap bc a hashmap doesnt keep keys sorted so this prints it sorted
+        return new TreeMap<>(frequencies);
     }
 
     /**
@@ -64,8 +72,15 @@ public class WordFrequencyCounter {
      * @return list of words, most frequent first
      */
     public List<String> getTopN(int n) {
-        // TODO
-        return List.of();
+        // using already built freq map
+        TreeMap<String, Long> freq = buildFrequencyMap();
+        // entry set bc u need key and value
+        return freq.entrySet().stream()
+                // review the comparing situation
+                .sorted(Comparator.comparing(Map.Entry<String, Long>:: getValue).reversed())
+                .limit(n)
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     /**
@@ -77,7 +92,10 @@ public class WordFrequencyCounter {
      */
     public List<String> getWordsStartingWith(char prefix) {
         // TODO
-        return List.of();
+        return buildFrequencyMap().keySet()
+                .stream()
+                .filter(word -> word.startsWith(String.valueOf(prefix)))
+                .toList();
     }
 
     /**
