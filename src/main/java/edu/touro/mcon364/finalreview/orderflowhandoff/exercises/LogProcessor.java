@@ -3,7 +3,13 @@ package edu.touro.mcon364.finalreview.orderflowhandoff.exercises;
 import edu.touro.mcon364.finalreview.model.LogLevel;
 import edu.touro.mcon364.finalreview.model.LogMessage;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * LogProcessor.
@@ -50,7 +56,11 @@ import java.util.Map;
  *   the processor's internal state?
  */
 public class LogProcessor {
-
+    private final BlockingQueue<LogMessage> queue = new LinkedBlockingQueue<>();
+    private final List<Thread> workers = new ArrayList<>();
+    private final AtomicInteger totalProcessed = new AtomicInteger(0);
+    private final ConcurrentHashMap<LogLevel, AtomicInteger> processed = new ConcurrentHashMap<>();
+    private volatile boolean running = false;
     /*
      * Decide what fields this class needs.
      *
@@ -67,13 +77,20 @@ public class LogProcessor {
      */
     public void submit(LogMessage message) {
         // TODO: implement
+        if (running) {
+            queue.offer(message);
+        }
     }
 
     /**
      * Start the requested number of background workers.
      */
     public void start(int workerCount) {
-        // TODO: implement
+        // TODO: implement  start(workerCount) starts exactly workerCount background workers.
+        // * - workerCount must be positive.
+        // * - workers should keep processing while the processor is still accepting work
+        // *   or while there is still unprocessed work waiting.
+
     }
 
     /**
