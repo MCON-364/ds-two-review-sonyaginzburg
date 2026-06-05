@@ -1,5 +1,7 @@
 package edu.touro.mcon364.finalreview.treesandthreads.homework;
 
+import edu.touro.mcon364.finalreview.treesandthreads.model.Employee;
+
 import java.util.*;
 import java.util.stream.*;
 
@@ -12,7 +14,11 @@ import java.util.stream.*;
  *
  * Before coding, think about:
  * - Should the map key be the student name or the grade? Why does it matter?
+ * shoud be the student name....
+ *
  * - What does TreeMap.firstEntry() return? What does lastEntry() return?
+ *
+ *
  * - How do we turn a numeric score into a letter grade inside a stream?
  *
  * Requirements:
@@ -32,8 +38,12 @@ public class StudentGradeBook {
     private final Map<String, Double> grades;
 
     public StudentGradeBook(Map<String, Double> grades) {
-        // TODO: validate non-null; store a defensive copy
-        this.grades = Map.of();
+        // validate that grades is not null
+        if (grades == null) {
+            throw new IllegalArgumentException("Grades cannot be null");
+        }
+        //store a defensive copy so outside code cannot mutate this object
+        this.grades = Map.copyOf(grades); // pay attention to the field!!
     }
 
     /**
@@ -41,8 +51,8 @@ public class StudentGradeBook {
      *
      */
     public TreeMap<String, Double> buildSortedGradeBook() {
-        // TODO
-        return new TreeMap<>();
+        // wrapping it in a treemap so it can be sorted, thats all
+        return new TreeMap<>(this.grades);
     }
 
     /**
@@ -50,8 +60,9 @@ public class StudentGradeBook {
      *
      */
     public DoubleSummaryStatistics getStatistics() {
-        // TODO
-        return new DoubleSummaryStatistics();
+        return grades.values().stream()// dont forget the values bc u dont need the keys
+                .mapToDouble(Double::doubleValue) // eah element is the grades already after grades.values() so just unwrapping Double to double
+                .summaryStatistics();
     }
 
     /**
@@ -59,16 +70,41 @@ public class StudentGradeBook {
      *
      */
     public TreeMap<String, Long> getLetterGradeDistribution() {
-        // TODO
-        return new TreeMap<>();
+        // return books.stream()
+        //                .collect(Collectors.groupingBy(
+        //                        Book::author, // group by author
+        //                        TreeMap::new, // Map supplier, sorted map of authors
+        //                        Collectors.toCollection(TreeSet::new) // this argument in groupingBY is called the downstream collector,
+        //                        // here it is a set of books per author
+        return grades.entrySet().stream() // u need entry set
+                .collect(Collectors.groupingBy(
+                        entry -> {
+                            double score = entry.getValue();
+                            if (score >= 90) return "A";
+                            if (score >= 80) return "B";
+                            if (score >= 70) return "C";
+                            if  (score >= 60) return "D";
+                            return "F";
+                        }, // streaming entrySet so each element is a Map.Entry<String, Double>
+                        TreeMap::new,
+                        Collectors.counting()// we want to count!
+
+                ));
     }
 
     /**
      * Returns the names of the n highest-scoring students, highest first.
      */
     public List<String> getTopStudents(int n) {
-        // TODO
-        return List.of();
+        // return buildTitleIndex().entrySet().stream() // using buildTitleIndex bc its already sorted
+          //      .filter(entry -> entry.getValue().year() < year) // filter by year, dig into entry to get the book and then the year
+            //    .map(Map.Entry::getValue) // extract the Book from the entry
+              //  .toList();
+        return buildSortedGradeBook().entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .limit(n)
+                .map(Map.Entry::getKey) // extract the name
+                .toList();
     }
 
     /**
@@ -76,7 +112,11 @@ public class StudentGradeBook {
      *
      */
     public List<String> getStudentsInScoreRange(double low, double high) {
-        // TODO
-        return List.of();
+        // answer why using filter here and not a submap
+        // getKey = name, getValue = grade
+        return buildSortedGradeBook().entrySet().stream() // using buildSortedGradeBook bc its already sorted
+                .filter(entry -> entry.getValue() >= low && entry.getValue() <= high) // filter by grade
+                .map(Map.Entry::getKey) // extract the name
+                .toList();
     }
 }

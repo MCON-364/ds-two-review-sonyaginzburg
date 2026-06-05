@@ -44,7 +44,6 @@ public class EmployeeRoster {
     private final List<Employee> employees;
 
     public EmployeeRoster(List<Employee> employees) {
-        // TODO validate non-null, store a defensive copy
         // validate that employees is not null
         if (employees == null ) {
             throw new IllegalArgumentException("Employees cannot be null");
