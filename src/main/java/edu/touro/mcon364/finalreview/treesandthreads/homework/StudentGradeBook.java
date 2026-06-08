@@ -96,10 +96,6 @@ public class StudentGradeBook {
      * Returns the names of the n highest-scoring students, highest first.
      */
     public List<String> getTopStudents(int n) {
-        // return buildTitleIndex().entrySet().stream() // using buildTitleIndex bc its already sorted
-          //      .filter(entry -> entry.getValue().year() < year) // filter by year, dig into entry to get the book and then the year
-            //    .map(Map.Entry::getValue) // extract the Book from the entry
-              //  .toList();
         return buildSortedGradeBook().entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(n)
