@@ -9,7 +9,10 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * LogProcessor.
@@ -45,21 +48,40 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * Questions to think about before coding:
  * - Where should submitted messages wait before a worker processes them?
+ *   in a queue?
+ *
  * - What behavior do we need from that structure: newest first, oldest first,
  *   priority order, or something else?
+ *   oldest first, fifo
+ *
  * - Which state is shared by multiple threads?
+ *
+ *
  * - Which operations must be protected so the statistics stay correct?
+ *
+ *
  * - How will worker threads know when to continue waiting for work and when to
  *   finish?
+ *   stop() method
+ *
  * - What should happen if stop() is called while messages are still waiting?
+ * wait to handle those messages but stop accepting new ones
+ *
  * - What should the public getter methods return so outside code cannot damage
  *   the processor's internal state?
  */
 public class LogProcessor {
+    // queue is shared so reg Arraydeque is not enough, BlockingQueue is thread safe
     private final BlockingQueue<LogMessage> queue = new LinkedBlockingQueue<>();
+
     private final List<Thread> workers = new ArrayList<>();
+
+    // Atomic Integer lets multiple threads increment safely without a lock
     private final AtomicInteger totalProcessed = new AtomicInteger(0);
+
     private final ConcurrentHashMap<LogLevel, AtomicInteger> processed = new ConcurrentHashMap<>();
+
+    // volatile to ensure all threads see the latest value of running
     private volatile boolean running = false;
     /*
      * Decide what fields this class needs.
@@ -76,7 +98,7 @@ public class LogProcessor {
      * Accept one message for processing.
      */
     public void submit(LogMessage message) {
-        // TODO: implement
+        // TODO: add the message to the queue
         if (running) {
             queue.offer(message);
         }
@@ -90,7 +112,17 @@ public class LogProcessor {
         // * - workerCount must be positive.
         // * - workers should keep processing while the processor is still accepting work
         // *   or while there is still unprocessed work waiting.
-
+        // validation
+        if (workerCount <= 0) {
+            throw new IllegalArgumentException("workerCount must be greater than 0");
+        }
+        // set running flag to true
+        running = true;
+        IntStream.range(0, workerCount).forEach(i -> {
+            Thread worker = new Thread(this::workerLoop);
+            worker.start();
+            workers.add(worker);
+        });
     }
 
     /**
@@ -100,36 +132,67 @@ public class LogProcessor {
      * private helper if your design is clearer that way.
      */
     private void workerLoop() {
-        // TODO: implement
+        // keep looping while either accepting new work or unprocessed work is waiting
+        while (running || !queue.isEmpty()) {
+            try {
+                LogMessage message = queue.poll(100, TimeUnit.MILLISECONDS);
+                if (message != null) {
+                    process(message);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+
+    }
     }
 
     /**
      * Process one message and update whatever statistics this class tracks.
      */
     private void process(LogMessage message) {
-        // TODO: implement
+        // computeIfAbsent get existing AtomicInteger for this level, or create one if missing
+        processed.computeIfAbsent(message.level(), k -> new AtomicInteger(0)).incrementAndGet();
+        totalProcessed.incrementAndGet();
+
+
     }
 
     /**
      * Stop the processor and wait for worker threads to finish.
      */
     public void stop() throws InterruptedException {
-        // TODO: implement
+        //  mark running as false, and then join all worker threads
+        running = false; // workers should stop accepting new work
+        workers.forEach(w -> {
+            try {
+                w.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
+
     }
 
     /**
      * Return the number of messages processed so far.
      */
     public int getTotalProcessed() {
-        // TODO: implement
-        return 0;
+        // return atomic count
+        return totalProcessed.get();
     }
 
     /**
      * Return a safe snapshot of the counts by level.
      */
     public Map<LogLevel, Integer> getCountsByLevel() {
-        // TODO: implement
-        return Map.of();
+        // TODO: defensive copy as Map.CopyOf()
+        return Map.copyOf(processed.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().get() // convert AtomicInteger to plain Integer
+                ))
+                );
     }
 }

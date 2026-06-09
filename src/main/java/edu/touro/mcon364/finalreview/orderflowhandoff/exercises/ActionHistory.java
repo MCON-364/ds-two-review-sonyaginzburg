@@ -37,6 +37,8 @@ public class ActionHistory {
         // TODO: implement based on the requirements above
         undoStack.push(action);
         redoStack.clear(); // clears the whole stack of redo
+        // (bc new action changes history so old redo choices wont make sense anymore)
+
 
     }
 
