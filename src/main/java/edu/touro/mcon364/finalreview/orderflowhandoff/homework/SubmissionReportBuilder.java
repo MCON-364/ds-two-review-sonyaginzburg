@@ -2,10 +2,12 @@ package edu.touro.mcon364.finalreview.orderflowhandoff.homework;
 
 import edu.touro.mcon364.finalreview.model.StudentSubmission;
 import edu.touro.mcon364.finalreview.model.SubmissionReport;
+import edu.touro.mcon364.finalreview.model.SupportTicket;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Homework 3 — Building a report from a completed collection.
@@ -43,58 +45,69 @@ import java.util.Objects;
  * - Returned collections should not allow callers to mutate the builder's
  *   internal state.
  */
-public class SubmissionReportBuilder {
+        public class SubmissionReportBuilder {
 
-    private final List<StudentSubmission> submissions;
+            private final List<StudentSubmission> submissions;
 
-    public SubmissionReportBuilder(List<StudentSubmission> submissions) {
-        this.submissions = List.copyOf(Objects.requireNonNull(submissions));
-    }
+            public SubmissionReportBuilder(List<StudentSubmission> submissions) {
+                this.submissions = List.copyOf(Objects.requireNonNull(submissions));
+                // look at this validation included in one line!
+            }
 
-    /**
-     * Return the number of submissions that were turned in late.
-     */
-    public long getLateCount() {
-        // TODO: answer this reporting question from the submissions collection
-        return 0;
-    }
+            /**
+             * Return the number of submissions that were turned in late.
+             */
+            public long getLateCount() {
+                // answer this reporting question from the submissions collection
+                return submissions.stream().filter(StudentSubmission::late).count();
+            }
 
-    /**
-     * Return the average score across all submissions.
-     *
-     * If there are no submissions, return 0.0.
-     */
-    public double getAverageScore() {
-        // TODO: answer this reporting question from the submissions collection
-        return 0.0;
-    }
+            /**
+             * Return the average score across all submissions.
+             *
+             * If there are no submissions, return 0.0.
+             */
+            public double getAverageScore() {
+                // TODO: answer this reporting question from the submissions collection
+                return submissions
+                        .stream()
+                        .mapToDouble(StudentSubmission::score)
+                        .average()
+                        .orElse(0.0);
+            }
 
-    /**
-     * Return a map where each assignment name is associated with the number of
-     * submissions received for that assignment.
-     */
-    public Map<String, Long> getSubmissionsByAssignment() {
-        // TODO: answer this reporting question from the submissions collection
-        return Map.of();
-    }
+            /**
+             * Return a map where each assignment name is associated with the number of
+             * submissions received for that assignment.
+             */
+            public Map<String, Long> getSubmissionsByAssignment() {
+                // TODO: answer this reporting question from the submissions collection
+                return Map.copyOf(
+                        submissions.stream()
+                                .collect(Collectors.groupingBy(StudentSubmission::assignmentName, Collectors.counting())));
+            }
 
-    /**
-     * Return the submissions whose score is below 60.
-     */
-    public List<StudentSubmission> getFailingSubmissions() {
-        // TODO: answer this reporting question from the submissions collection
-        return List.of();
-    }
+            /**
+             * Return the submissions whose score is below 60.
+             */
+            public List<StudentSubmission> getFailingSubmissions() {
+                // TODO: answer this reporting question from the submissions collection
+                return List.copyOf(
+                        submissions.stream()
+                        .filter(t -> t.score() < 60)
+                        .toList()
+                );
+            }
 
-    /**
-     * Build the complete report by combining the smaller reporting questions.
-     */
-    public SubmissionReport buildReport() {
-        return new SubmissionReport(
-                getLateCount(),
-                getAverageScore(),
-                getSubmissionsByAssignment(),
-                getFailingSubmissions()
-        );
-    }
-}
+            /**
+             * Build the complete report by combining the smaller reporting questions.
+             */
+            public SubmissionReport buildReport() {
+                return new SubmissionReport(
+                        getLateCount(),
+                        getAverageScore(),
+                        getSubmissionsByAssignment(),
+                        getFailingSubmissions()
+                );
+            }
+        }
